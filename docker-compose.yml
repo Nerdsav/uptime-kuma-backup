@@ -1,0 +1,33 @@
+---
+version: '3.7'
+services:
+  uptime-kuma-backup:
+    container_name: uptime-kuma-backup
+    build: .
+    restart: always
+    init: true
+    volumes:
+      - /opt/uptime-kuma/data:/data/
+      - /BACKUP/uptime-kuma:/backup
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /root/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf
+    environment:
+      - APP_DATABASE_URL=/data/kuma.db
+      - BACKUP_ADD_DATABASE=true
+      - BACKUP_SEND=true
+      - BACKUP_SEND_DEST_PATH='storj-sav:/backup/CTMON/uptime_ctmon_ru'
+      - DELETE_AFTER=1
+      - TIMESTAMP=true
+      - CRON_TIME=19 21 * * *
+      - TZ=Etc/UTC
+      - UID=1000
+      - GID=1000
+      - BACKUP_DIR=/backup
+      #- BACKUP_DIR_PERMISSIONS=777
+      - BACKUP_DIR_PERMISSIONS=-1
+      - LOG_DIR_PERMISSIONS=-1
+      - LOG_DIR=/backup/logs
+      - LOG_LEVEL=DEBUG
+
+
