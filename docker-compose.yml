@@ -15,8 +15,12 @@ services:
     environment:
       - APP_DATABASE_URL=/data/kuma.db
       - BACKUP_ADD_DATABASE=true
+      - DELETE_REMOTE_AFTER=14
+      - BACKUP_ADD_ATTACHMENTS=false
+      - BACKUP_ADD_CONFIG_JSON=false
+      - BACKUP_ADD_RSA_KEY=false
       - BACKUP_SEND=true
-      - BACKUP_SEND_DEST_PATH='storj-sav:/backup/CTMON/uptime_ctmon_ru'
+      - BACKUP_SEND_DEST_PATH='storj-sav:/backup/CTMON/uptime_kuma'
       - DELETE_AFTER=1
       - TIMESTAMP=true
       - CRON_TIME=19 21 * * *
@@ -24,8 +28,7 @@ services:
       - UID=1000
       - GID=1000
       - BACKUP_DIR=/backup
-      #- BACKUP_DIR_PERMISSIONS=777
-      - BACKUP_DIR_PERMISSIONS=-1
+      - BACKUP_DIR_PERMISSIONS=755
       - LOG_DIR_PERMISSIONS=-1
       - LOG_DIR=/backup/logs
       - LOG_LEVEL=DEBUG

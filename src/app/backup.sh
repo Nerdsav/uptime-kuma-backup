@@ -98,16 +98,42 @@ perform_healthcheck() {
   wget "$HEALTHCHECK_URL" -T 10 -t 5 -q -O /dev/null
 }
 
-backup_send() {
-    rclone copy $BACKUP_DIR/ ${BACKUP_SEND_DEST_PATH}/ -vL 2>&1 >> "$LOGFILE_APP"
-}
 
 
 cleanup() {
   if [ -n "$DELETE_AFTER" ] && [ "$DELETE_AFTER" -gt 0 ]; then
+    info "[Cleanup]: Deleted backups after $DELETE_AFTER days" >> "$LOGFILE_APP"
     if [ "$TIMESTAMP" != true ]; then warn "DELETE_AFTER will most likely have no effect because TIMESTAMP is not set to true." >> "$LOGFILE_APP"; fi
-    find "$BACKUP_DIR" -type f -mtime +"$DELETE_AFTER" -exec sh -c '. /opt/scripts/logging.sh; file="$1"; rm -f "$file"; info "Deleted backup "$file" after $DELETE_AFTER days"' shell {} \;  >> "$LOGFILE_APP"
+    find "$BACKUP_DIR" -type f -mtime +"$DELETE_AFTER" -print|while read ff;do
+	info "[Cleanup]: - $ff" >> "$LOGFILE_APP"
+    done
+    find "$BACKUP_DIR" -type f -mtime +"$DELETE_AFTER" -delete >> "$LOGFILE_APP"
   fi
+}
+
+cleanup_remote() {
+    if [ -n "$DELETE_REMOTE_AFTER" ] && [ "$DELETE_REMOTE_AFTER" -gt 0 ]; then
+	info "[Cleanup-remote]: Deleted backups after $DELETE_REMOTE_AFTER days" >> "$LOGFILE_APP"
+	rclone delete --min-age "$DELETE_AFTER"d ${BACKUP_SEND_DEST_PATH}/ >> "$LOGFILE_APP"
+    else
+	info "[Cleanup-remote]: Disabled deleted remote backups after $DELETE_REMOTE_AFTER days" >> "$LOGFILE_APP"
+    fi
+}
+
+backup_send() {
+    info "[Send]: Rclone copy backup files to $BACKUP_DIR/ -> ${BACKUP_SEND_DEST_PATH}/" >> "$LOGFILE_APP"
+    rclone copy $BACKUP_DIR/ ${BACKUP_SEND_DEST_PATH}/ -vL 2>&1 >> "$LOGFILE_APP"
+    if [ "$?" != 0 ]; then
+	error "[Send]: Error copy" >> "$LOGFILE_APP"
+	cleanup
+    else
+	cleanup_remote
+	info "[Send]: Tree remote path:" >> "$LOGFILE_APP"
+	rclone lsf ${BACKUP_SEND_DEST_PATH}/|grep gz|while read ff;do
+	    info "[Send]: + $ff" >> "$LOGFILE_APP"
+        done
+	rclone size ${BACKUP_SEND_DEST_PATH}/ >> "$LOGFILE_APP"
+    fi 
 }
 
 ### Main ###
